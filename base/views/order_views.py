@@ -1,4 +1,4 @@
-from datetime import datetime
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -57,7 +57,10 @@ def addOrderItems(request):
 @permission_classes([IsAuthenticated])
 def getMyOrders(request):
     user = request.user
-    orders = user.order_set.all()
+    orders = Order.objects.filter(user=user)\
+        .select_related('user', 'shippingaddress')\
+        .prefetch_related('orderitem_set__product')
+
     serializer = OrderSerializer(orders, many=True)
     return Response(serializer.data)
 
@@ -65,7 +68,10 @@ def getMyOrders(request):
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
 def getOrders(request):
-    orders = Order.objects.all()
+    orders = Order.objects.all()\
+        .select_related('user', 'shippingaddress')\
+        .prefetch_related('orderitem_set__product')
+
     serializer = OrderSerializer(orders, many=True)
     return Response(serializer.data)
 
@@ -73,29 +79,36 @@ def getOrders(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def getOrderById(request, pk):
-
     user = request.user
 
     try:
-        order = Order.objects.get(_id=pk)
+        order = Order.objects.select_related('user', 'shippingaddress')\
+            .prefetch_related('orderitem_set__product')\
+            .get(_id=pk)
+
         if user.is_staff or order.user == user:
             serializer = OrderSerializer(order, many=False)
             return Response(serializer.data)
         else:
-            Response({'detail': 'Not Authorized  to view this order'},
-                     status=status.HTTP_400_BAD_REQUEST)
-    except:
+            return Response({'detail': 'Not Authorized to view this order'},
+                            status=status.HTTP_400_BAD_REQUEST)
+    except Order.DoesNotExist:
         return Response({'detail': 'Order does not exist'}, status=status.HTTP_400_BAD_REQUEST)
-
 
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
 def updateOrderToPaid(request, pk):
-    order = Order.objects.get(_id=pk)
-    order.isPaid = True
-    order.paidAt = datetime.now()
-    order.save()
-    return Response('Order was paid')
+    try:
+        order = Order.objects.get(_id=pk)
+        if request.user != order.user:
+            return Response({'detail': 'Not authorized to update this order'}, status=status.HTTP_403_FORBIDDEN)
+
+        order.isPaid = True
+        order.paidAt = timezone.now()
+        order.save()
+        return Response("Order was paid")
+    except Order.DoesNotExist:
+        return Response({'detail': 'Order not found'}, status=status.HTTP_404_NOT_FOUND)
 
 
 @api_view(['PUT'])
@@ -103,6 +116,7 @@ def updateOrderToPaid(request, pk):
 def updateOrderToDelivered(request, pk):
     order = Order.objects.get(_id=pk)
     order.isDeliver = True
-    order.deliveredAt = datetime.now()
+    order.deliveredAt = timezone.now()
     order.save()
     return Response('Order was Delivered')
+

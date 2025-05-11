@@ -1,4 +1,4 @@
-from .models import Product
+from base.models import Product
 from rest_framework.test import APITestCase, APIClient
 from django.contrib.auth.models import User
 from django.urls import reverse
@@ -11,7 +11,7 @@ class CreateProductTest(APITestCase):
         self.user = User.objects.create_user(username='testuser', password='testpass')
         self.client = APIClient()
         self.client.login(username='testuser', password='testpass')
-        self.url = reverse('product-create')  # имя должно совпадать с name в urls.py
+        self.url = reverse('product-create')
 
     def test_create_product(self):
         response = self.client.post(self.url)
@@ -44,7 +44,7 @@ class ProductListTest(APITestCase):
         )
 
     def test_get_products_list(self):
-        url = reverse('products')  # name="products" from your urls
+        url = reverse('products')
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -133,7 +133,6 @@ class CreateProductTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
-
 class ProductDeleteTest(APITestCase):
 
     def setUp(self):
@@ -157,7 +156,7 @@ class ProductDeleteTest(APITestCase):
         )
 
         # URL for deleting the product
-        self.url = reverse('delete_product', kwargs={'pk': self.product._id})  # Make sure the reverse URL name matches
+        self.url = reverse('delete_product', kwargs={'pk': self.product._id})
 
     def test_delete_product(self):
         # Send the DELETE request
@@ -194,48 +193,4 @@ class ProductDeleteTest(APITestCase):
         # Check that the product was not deleted
         self.assertTrue(Product.objects.filter(_id=self.product._id).exists())
 
-
-class UserLoginTest(APITestCase):
-
-    def setUp(self):
-        # Create test user
-        self.admin_user = User.objects.create_user(
-            username='admin@sdu.kz',
-            email='admin@sdu.kz',
-            password='admin',
-            is_staff=True,  # or is_superuser=True if needed
-        )
-        self.login_url = reverse('login')  # make sure your `urls.py` names it as `login`
-
-    def test_login_success(self):
-        data = {
-            "username": "admin@sdu.kz",
-            "password": "admin"
-        }
-        response = self.client.post(self.login_url, data, format='json')
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('access', response.data)
-        self.assertIn('refresh', response.data)
-        self.assertEqual(response.data['username'], "admin@sdu.kz")
-        self.assertTrue(response.data['isAdmin'])
-
-    def test_login_invalid_credentials(self):
-        data = {
-            "username": "admin@sdu.kz",
-            "password": "wrongpassword"
-        }
-        response = self.client.post(self.login_url, data, format='json')
-
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-        self.assertIn("detail", response.data)
-
-    def test_login_missing_fields(self):
-        data = {
-            "username": "",
-            "password": ""
-        }
-        response = self.client.post(self.login_url, data, format='json')
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 

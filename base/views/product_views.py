@@ -9,11 +9,12 @@ from base.serializers import ProductSerializer
 
 @api_view(['GET'])
 def getProducts(request):
-    query = request.query_params.get('keyword')
-    if query == None:
-        query = ''
+    query = request.query_params.get('keyword', '')
 
-    products = Product.objects.filter(name__icontains=query).order_by('-_id')
+    # Optimize query to prevent N+1 problem
+    products = Product.objects.filter(name__icontains=query).order_by('-_id') \
+        .select_related('user') \
+        .prefetch_related('review_set')
 
     page = request.query_params.get('page')
     paginator = Paginator(products, 8)
@@ -25,13 +26,10 @@ def getProducts(request):
     except EmptyPage:
         products = paginator.page(paginator.num_pages)
 
-    if page == None:
-        page = 1
-    page = int(page)
+    page = int(page) if page else 1
 
     serializer = ProductSerializer(products, many=True)
     return Response({'products': serializer.data, 'page': page, 'pages': paginator.num_pages})
-
 
 @api_view(['GET'])
 def getTopProducts(request):
@@ -50,7 +48,6 @@ def getProduct(request, pk):
 @api_view(['POST'])
 @permission_classes([IsAdminUser])
 def createProduct(request):
-
     user = request.user
     product = Product.objects.create(
         user=user,
@@ -64,6 +61,7 @@ def createProduct(request):
 
     serializer = ProductSerializer(product, many=False)
     return Response(serializer.data)
+
 
 @api_view(['PUT'])
 @permission_classes([IsAdminUser])
@@ -82,6 +80,7 @@ def updateProduct(request, pk):
 
     serializer = ProductSerializer(product, many=False)
     return Response(serializer.data)
+
 
 @api_view(['DELETE'])
 @permission_classes([IsAdminUser])
