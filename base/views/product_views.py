@@ -1,23 +1,10 @@
-# Django Import
-from django.core import paginator
-from django.shortcuts import render
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-
 from rest_framework import status
-
-# Rest Framework Import
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
-from rest_framework.serializers import Serializer
-
-
-# Local Import
-from base.products import products
 from base.models import *
 from base.serializers import ProductSerializer
-
-# Get all the products with query
 
 
 @api_view(['GET'])
@@ -45,8 +32,6 @@ def getProducts(request):
     serializer = ProductSerializer(products, many=True)
     return Response({'products': serializer.data, 'page': page, 'pages': paginator.num_pages})
 
-# Top Products
-
 
 @api_view(['GET'])
 def getTopProducts(request):
@@ -55,7 +40,6 @@ def getTopProducts(request):
     return Response(serializer.data)
 
 
-# Get single products
 @api_view(['GET'])
 def getProduct(request, pk):
     product = Product.objects.get(_id=pk)
@@ -63,7 +47,6 @@ def getProduct(request, pk):
     return Response(serializer.data)
 
 
-# Create a new Product
 @api_view(['POST'])
 @permission_classes([IsAdminUser])
 def createProduct(request):
@@ -81,9 +64,6 @@ def createProduct(request):
 
     serializer = ProductSerializer(product, many=False)
     return Response(serializer.data)
-
-# Update single products
-
 
 @api_view(['PUT'])
 @permission_classes([IsAdminUser])
@@ -103,8 +83,6 @@ def updateProduct(request, pk):
     serializer = ProductSerializer(product, many=False)
     return Response(serializer.data)
 
-
-# Delete a product
 @api_view(['DELETE'])
 @permission_classes([IsAdminUser])
 def deleteProduct(request, pk):
@@ -138,12 +116,10 @@ def createProductReview(request, pk):
         content = {'detail': 'Product already reviewed'}
         return Response(content, status=status.HTTP_400_BAD_REQUEST)
 
-    # 2 No Rating or 0
     elif data['rating'] == 0:
         content = {'detail': 'Please Select a rating'}
         return Response(content, status=status.HTTP_400_BAD_REQUEST)
 
-    # 3 Create review
     else:
         review = Review.objects.create(
             user=user,
