@@ -14,6 +14,8 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 from pathlib import Path
 import os
 
+from dotenv import load_dotenv
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -45,6 +47,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'drf_spectacular',
     'silk',
+    'storages',
 ]
 
 # Simple JWT 
@@ -137,21 +140,15 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+     'default': {
+         'ENGINE': 'django.db.backends.postgresql',
+         'NAME': 'postgres',
+         'USER': 'postgres',
+         'PASSWORD': 'postgres',
+         'HOST': 'db',
+         'PORT': '5432',
     }
 }
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'postgres',
-#         'USER': 'postgres',
-#         'PASSWORD': 'postgres',
-#         'HOST': 'db',
-#         'PORT': '5432',
-#     }
-# }
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
@@ -210,4 +207,45 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
     # OTHER SETTINGS
+}
+
+
+
+load_dotenv(dotenv_path=BASE_DIR / ".env")
+
+MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "http://localhost:9000")
+MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY", "minioadmin")
+MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY", "minioadmin123")
+MINIO_BUCKET_NAME = os.getenv("MINIO_BUCKET_NAME", "media")
+
+
+
+
+
+AWS_S3_ADDRESSING_STYLE = "path"
+
+AWS_S3_USE_SSL = False
+AWS_S3_SECURE_URLS = False
+AWS_S3_URL_PROTOCOL = "http:"
+AWS_S3_CUSTOM_DOMAIN = "localhost:9000/media"
+MEDIA_URL = f"http://{AWS_S3_CUSTOM_DOMAIN}/"
+
+
+STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        "OPTIONS": {
+            "endpoint_url": MINIO_ENDPOINT,
+            "access_key": MINIO_ACCESS_KEY,
+            "secret_key": MINIO_SECRET_KEY,
+            "bucket_name": MINIO_BUCKET_NAME,
+            "file_overwrite": False,
+            "default_acl": "public-read",
+            "custom_domain": AWS_S3_CUSTOM_DOMAIN,
+            "addressing_style": "path",
+        },
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
 }
