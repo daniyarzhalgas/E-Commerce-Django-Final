@@ -220,8 +220,6 @@ MINIO_BUCKET_NAME = os.getenv("MINIO_BUCKET_NAME", "media")
 
 
 
-
-
 AWS_S3_ADDRESSING_STYLE = "path"
 
 AWS_S3_USE_SSL = False

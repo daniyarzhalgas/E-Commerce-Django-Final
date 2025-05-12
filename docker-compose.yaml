@@ -15,6 +15,7 @@ services:
 
   minio:
     image: minio/minio:latest
+    container_name: minio_db
     command: server /data --console-address ":9001"
     ports:
       - "9000:9000"
@@ -34,8 +35,6 @@ services:
       - minio
     env_file:
       - .env
-    expose:
-      - "8000"
     ports:
       - "8000:8000"
     volumes:
@@ -55,5 +54,8 @@ services:
 
 volumes:
   minio_data:
+    name: minio_data
   pg_data:
+    name: pg_data
   staticfiles:
+    name: staticfiles
